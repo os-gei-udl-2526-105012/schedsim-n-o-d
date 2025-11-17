@@ -87,6 +87,22 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
         procTable[p].completed = false;
     }
     if(algorithm == FCFS){
+        int tempo = 0;
+        for(int t=0; t < duration; t++){
+            proctable[t] = Running;
+            proctable[t].response_time = t; 
+            proctable[t].completed = true;
+            
+            
+            if(proctable[t].burst + tempo == t){
+                proctable[t] = Finished;
+                proctable[t].return_time = t;
+                tempo = t;
+            }
+            
+
+        }
+        
 
     }
     if(algorithm == SJF){
@@ -96,7 +112,7 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
 
     }
     if(algorithm == PRIORITIES){
-        
+
     }
     
 
