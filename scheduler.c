@@ -86,6 +86,19 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
         procTable[p].response_time = 0;
         procTable[p].completed = false;
     }
+    if(algorithm == FCFS){
+
+    }
+    if(algorithm == SJF){
+
+    }
+    if(algorithm == RR){
+
+    }
+    if(algorithm == PRIORITIES){
+        
+    }
+    
 
     printSimulation(nprocs,procTable,duration);
 
