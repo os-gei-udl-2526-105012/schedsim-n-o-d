@@ -158,7 +158,6 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
                     for(int t = 0; t < duration; t++){
                     procTable[p].lifecycle[t] = Running;
                     procTable[p].response_time = t; 
-                    if(){
                     procTable[p].lifecycle[t] = Finished;
                     procTable[p].return_time = t;
                     procTable[p].completed = true;
@@ -167,13 +166,12 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
                         Process *volatileprocess = dequeue();
                         volatileprocess->burst -= executed;
                         executed = 0;
-                        qsort(procTable, nprocs, sizeof(Process), compareArrival)
+                        qsort(procTable, nprocs, sizeof(Process), compareArrival);
                     }
                 }
             }
          }
         }
-    }
     if(algorithm == PRIORITIES){
         qsort(procTable, nprocs, sizeof(Process), comparePriority);
         if(modality == NONPREEMPTIVE){
@@ -199,6 +197,7 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
         }
 
     }
+
     
 
     printSimulation(nprocs,procTable,duration);
