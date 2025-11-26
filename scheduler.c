@@ -147,6 +147,47 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
 
     }
     if(algorithm == PRIORITIES){
+        if(modality == NONPREEMPTIVE){
+            qsort (procTable,nprocs,sizeof(Process),comparePriority);
+            while(get_queue_size() > 0){
+                int tempo = 0;
+                for(int t=0; t < duration; t++){
+                    procTable[t].lifecycle[t] = Running;
+                    procTable[t].response_time = t; 
+                    procTable[t].completed = true;
+                    
+                    if(procTable[t].burst + tempo == t){
+                        procTable[t].lifecycle[t] = Finished;
+                        procTable[t].return_time = t;
+                        tempo = t;
+                        dequeue();
+                    }
+
+                }
+            }  
+        }else if (modality == PREEMPTIVE){
+
+            while(get_queue_size() > 0){
+                int tempo = 0;
+                for(int t=0; t < duration; t++){
+                    
+                    qsort (procTable,nprocs,sizeof(Process),comparePriority);
+                    
+                    procTable[t].lifecycle[t] = Running;
+                    procTable[t].response_time = t; 
+                    procTable[t].completed = true;
+                    
+                    if(procTable[t].burst + tempo == t){
+                        procTable[t].lifecycle[t] = Finished;
+                        procTable[t].return_time = t;
+                        tempo = t;
+                        dequeue();
+                    }
+
+                }
+            }  
+        }
+        
 
     }
     
