@@ -76,6 +76,10 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
     init_queue();
     size_t duration = getTotalCPU(procTable, nprocs) +1;
 
+    for (int i = 0; i < (int)nprocs; i++) {
+    enqueue(&procTable[i]);
+    }
+
     for (int p=0; p<nprocs; p++ ){
         procTable[p].lifecycle = malloc( duration * sizeof(int));
         for(int t=0; t<duration; t++){
@@ -86,119 +90,160 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
         procTable[p].response_time = 0;
         procTable[p].completed = false;
     }
-        if(algorithm == FCFS){
-            while(get_queue_size() > 0){
-            int tempo = 0;
-                for(int p =0; p < nprocs; p++){
-                    for(int t = 0; t < duration; t++){
-                    procTable[p].lifecycle[t] = Running;
-                    procTable[p].response_time = t; 
-                    if(procTable[p].burst + tempo == t){
-                    procTable[p].lifecycle[t] = Finished;
-                    procTable[p].return_time = t;
-                    procTable[p].completed = true;
-                    tempo = t;
-                    dequeue();
-                }
-            }
-         }
-        }
-    }
-    if(algorithm == SJF){
-        qsort(procTable, nprocs, sizeof(Process), compareBurst);
-        if(modality == NONPREEMPTIVE){
+    if(algorithm == FCFS){
+        int tempo = 0;
+            
         while(get_queue_size() > 0){
-            int tempo = 0;
-                for(int p =0; p < nprocs; p++){
-                    for(int t = 0; t < duration; t++){
-                    procTable[p].lifecycle[t] = Running;
-                    procTable[p].response_time = t; 
-                    if(procTable[p].burst + tempo == t){
-                    procTable[p].lifecycle[t] = Finished;
-                    procTable[p].return_time = t;
-                    procTable[p].completed = true;
-                    tempo = t;
-                    dequeue();
-                }
-            }
-         }
-        }
+            for(int p =0; p < nprocs; p++){
+                for(int t = tempo; t < tempo + procTable[p].burst; t++){
+                procTable[p].lifecycle[t] = Running;
+                procTable[p].response_time = tempo; 
 
-    }else if(modality == PREEMPTIVE){
-        while(get_queue_size() > 0){
-                for(int p =0; p < nprocs; p++){
-                    for(int t = 0; t < duration; t++){
-                    procTable[p].lifecycle[t] = Running;
-                    procTable[p].response_time = t; 
-                    
-
-                    if(procTable[p].burst == 1){
+                    if(procTable[p].burst-1 + tempo == t){
                     procTable[p].lifecycle[t] = Finished;
                     procTable[p].return_time = t;
                     procTable[p].completed = true;
-                }
-                Process  *volatileprocess = dequeue();
-                volatileprocess->burst -= 1;
-                if(volatileprocess->burst != 0){
-                    enqueue(volatileprocess);
-                    qsort(procTable, nprocs, sizeof(Process), compareBurst);
-                }
-                
-            }
-         }
-        }
-        
-    }
-}
-    if(algorithm == RR){
-        while(get_queue_size() > 0){
-            qsort(procTable, nprocs, sizeof(Process), compareArrival);
-            int executed = 0;
-                for(int p =0; p < nprocs; p++){
-                    for(int t = 0; t < duration; t++){
-                    procTable[p].lifecycle[t] = Running;
-                    procTable[p].response_time = t; 
-                    procTable[p].lifecycle[t] = Finished;
-                    procTable[p].return_time = t;
-                    procTable[p].completed = true;
+                    tempo = t + 1;
                     dequeue();
-                    if(executed == quantum){
-                        Process *volatileprocess = dequeue();
-                        volatileprocess->burst -= executed;
-                        executed = 0;
-                        qsort(procTable, nprocs, sizeof(Process), compareArrival);
                     }
                 }
             }
-         }
         }
-    if(algorithm == PRIORITIES){
-        qsort(procTable, nprocs, sizeof(Process), comparePriority);
+    }
+    if(algorithm == SJF){
+        
+        qsort(procTable, nprocs, sizeof(Process), compareBurst);
+        
         if(modality == NONPREEMPTIVE){
-        while(get_queue_size() > 0){
-            int tempo = 0;
+        int tempo = 0;
+            while(get_queue_size() > 0){
                 for(int p =0; p < nprocs; p++){
-                    for(int t = 0; t < duration; t++){
+                    for(int t = tempo; t < tempo + procTable[p].burst; t++){
                     procTable[p].lifecycle[t] = Running;
-                    procTable[p].response_time = t; 
-                    if(procTable[p].burst + tempo == t){
+                    procTable[p].response_time = tempo; 
+                    
+                    if(procTable[p].burst-1 + tempo == t){
                     procTable[p].lifecycle[t] = Finished;
                     procTable[p].return_time = t;
                     procTable[p].completed = true;
-                    tempo = t;
+                    tempo = t + 1;
                     dequeue();
+                    }
+                }
                 }
             }
-         }
+        }else if (modality == PREEMPTIVE) {
+
+        int t = 0;
+
+        while (get_queue_size() > 0) {
+            Process *volatileprocess = dequeue();
+            volatileprocess->lifecycle[t] = Running;
+
+            if (volatileprocess->response_time == 0) {
+                volatileprocess->response_time = t;
+            }
+
+            volatileprocess->burst -= 1;
+
+            if (volatileprocess->burst == 0) {
+                volatileprocess->lifecycle[t] = Finished;
+                volatileprocess->return_time = t;
+                volatileprocess->completed = true;
+                
+            } else {
+                enqueue(volatileprocess);
+                size_t qsize = get_queue_size();
+                if (qsize > 1) {
+                    Process *list = transformQueueToList();                
+                    qsort(list, qsize, sizeof(Process), compareBurst);     
+                    setQueueFromList(list);                               
+                    free(list);
+                }
+            }
+            t++;
         }
     }
-        if(modality == PREEMPTIVE){
-
-        }
 
     }
+    if (algorithm == RR) {
+        int t = 0; 
+        while (get_queue_size() > 0) {
 
-    
+            Process *current = dequeue();
+            int executed = 0;  
+            while (executed < quantum && current->burst > 0 && t < (int)duration) {
+
+                current->lifecycle[t] = Running;
+                if (current->response_time == 0) {
+                    current->response_time = t;
+                }
+                current->burst -= 1;
+                executed++;
+                t++;
+            }
+
+            if (current->burst == 0) {
+                current->lifecycle[t-1] = Finished;
+                current->completed = true;
+                current->return_time = t-1;
+            } else {
+                enqueue(current);
+            }
+        }
+    }
+    if(algorithm == PRIORITIES){
+        qsort(procTable, nprocs, sizeof(Process), comparePriority);
+        if(modality == NONPREEMPTIVE){
+            int tempo = 0;
+            while(get_queue_size() > 0){
+                for(int p =0; p < nprocs; p++){
+                    for(int t = tempo; t < tempo + procTable[p].burst; t++){
+                    procTable[p].lifecycle[t] = Running;
+                    procTable[p].response_time = tempo; 
+
+                        if(procTable[p].burst-1 + tempo == t){
+                        procTable[p].lifecycle[t] = Finished;
+                        procTable[p].return_time = t;
+                        procTable[p].completed = true;
+                        tempo = t + 1;
+                        dequeue();
+                        }
+                    }
+                }
+            }
+        } else if(modality == PREEMPTIVE){
+
+            int t = 0;
+
+            while (get_queue_size() > 0) {            
+            
+                Process *current = dequeue();
+                current->lifecycle[t] = Running;
+                if (current->response_time == 0) {
+                    current->response_time = t;
+                }
+
+                current->burst -= 1;
+                if (current->burst == 0) {
+                    current->lifecycle[t] = Finished;
+                    current->completed = true;
+                    current->return_time = t;
+                } else {
+                    enqueue(current);
+                    size_t qsize2 = get_queue_size();
+                    if (qsize2 > 1) {
+                        Process *list2 = transformQueueToList();
+                        qsort(list2, qsize2, sizeof(Process), comparePriority);
+                        setQueueFromList(list2);
+                        free(list2);
+                    }
+                }
+                t++;
+            }
+        }
+    }
+       
 
     printSimulation(nprocs,procTable,duration);
 
@@ -210,7 +255,7 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
     return EXIT_SUCCESS;
 
 }
-
+ 
 
 void printSimulation(size_t nprocs, Process *procTable, size_t duration){
 
