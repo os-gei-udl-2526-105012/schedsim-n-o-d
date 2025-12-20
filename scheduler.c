@@ -67,6 +67,37 @@
         return burst;
     }
 
+    static void computeMetricsFromLifecycle(size_t nprocs, Process *pt, size_t duration) {
+    for (size_t p = 0; p < nprocs; p++) {
+
+        int first_run = -1;
+        int last_run = -1;
+        int cpu_used = 0;
+
+        for (size_t t = 0; t < duration; t++) {
+            if (pt[p].lifecycle[t] == Running) {
+                cpu_used++;
+                if (first_run == -1) first_run = (int)t;
+                last_run = (int)t;
+            }
+        }
+
+        if (first_run == -1) {
+            pt[p].response_time = -1;
+            pt[p].return_time = -1;
+            pt[p].waiting_time = -1;
+            continue;
+        }
+
+        int finish_time = last_run + 1; 
+
+        pt[p].response_time = first_run - pt[p].arrive_time;
+        pt[p].return_time   = finish_time - pt[p].arrive_time;
+        pt[p].waiting_time  = pt[p].return_time - cpu_used;
+    }
+    }
+
+
     int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modality, int quantum){
 
         Process * _proclist;
@@ -554,7 +585,9 @@
             }
         }
     */
-        printSimulation(nprocs,procTable,duration);
+    printSimulation(nprocs, procTable, duration);
+    computeMetricsFromLifecycle(nprocs, procTable, duration);
+    printMetrics(duration - 1, nprocs, procTable);
 
     for (int p=0; p<nprocs; p++ ){
         destroyProcess(procTable[p]);
